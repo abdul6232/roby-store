@@ -10,3 +10,10 @@ export const fmt = (n, d = 2) => Number(n || 0).toLocaleString('en-US', { maximu
 export const toSyp = (usd, rate) => Math.round(usd * rate)
 export const fmtDT = (t) => new Date(t).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })
 export const fmtD = (t) => new Date(t).toLocaleDateString('en-GB')
+// خريطة id → الاسم الكامل (لعرض الاسم الحالي بدل البريد المخزّن)
+export function useNames() {
+  const [m, setM] = useState({})
+  useEffect(() => { supabase.from('profiles').select('id,full_name').then(({ data }) =>
+    setM(Object.fromEntries((data || []).filter(p => p.full_name).map(p => [p.id, p.full_name])))) }, [])
+  return m
+}

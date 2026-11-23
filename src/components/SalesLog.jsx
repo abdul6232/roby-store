@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
-import { useRate, fmt, toSyp, fmtDT } from '../rate.js'
+import { useRate, useNames, fmt, toSyp, fmtDT } from '../rate.js'
 import { exportPdf } from '../pdf.js'
 
 export default function SalesLog({ since, ver = 0, title = 'سجل المبيعات' }) {
-  const { isAdmin } = useAuth(); const rate = useRate()
+  const { isAdmin } = useAuth(); const rate = useRate(); const names = useNames()
   const [rows, setRows] = useState([]); const [seller, setSeller] = useState('')
   const [from, setFrom] = useState(''); const [to, setTo] = useState('')
   useEffect(() => {
@@ -15,14 +15,14 @@ export default function SalesLog({ since, ver = 0, title = 'سجل المبيع�
     if (!since && to) q = q.lte('sold_at', to + 'T23:59:59')
     q.then(({ data }) => setRows(data || []))
   }, [since, from, to, ver])
-  const sellers = useMemo(() => [...new Map(rows.map(r => [r.seller_id, r.seller_name])).entries()], [rows])
+  const sellers = useMemo(() => [...new Map(rows.map(r => [r.seller_id, names[r.seller_id] || r.seller_name])).entries()], [rows, names])
   const shown = rows.filter(r => !seller || r.seller_id === seller)
   const total = shown.reduce((s, r) => s + r.qty * +r.unit_price_usd, 0)
   const pdf = () => exportPdf({ title: title + (seller ? ' - ' + (sellers.find(s => s[0] === seller)?.[1] || '') : ''),
     filename: `roby-sales-${new Date().toISOString().slice(0, 10)}.pdf`,
     columns: [{ key: 'at', label: 'التاريخ والوقت', num: 1 }, { key: 'item', label: 'القطعة' }, { key: 'qty', label: 'الكمية', num: 1 },
       { key: 'tot', label: 'المبلغ ($)', num: 1 }, { key: 'by', label: 'البائع' }],
-    rows: shown.map(r => ({ at: fmtDT(r.sold_at), item: r.item_name, qty: r.qty, tot: fmt(r.qty * +r.unit_price_usd), by: r.seller_name })),
+    rows: shown.map(r => ({ at: fmtDT(r.sold_at), item: r.item_name, qty: r.qty, tot: fmt(r.qty * +r.unit_price_usd), by: names[r.seller_id] || r.seller_name })),
     summary: [['عدد العمليات', shown.length], ['الإجمالي ($)', fmt(total)], ['الإجمالي (ل.س)', fmt(toSyp(total, rate), 0)]] })
   return (
     <div className="card" style={{ marginTop: 16, overflowX: 'auto' }}>
@@ -37,7 +37,7 @@ export default function SalesLog({ since, ver = 0, title = 'سجل المبيع�
       </div>
       <table><thead><tr><th>الوقت</th><th>القطعة</th><th>الكمية</th><th>المبلغ ($)</th><th>البائع</th></tr></thead>
         <tbody>{shown.map(r => <tr key={r.id}><td className="num">{fmtDT(r.sold_at)}</td><td>{r.item_name}</td><td className="num">{r.qty}</td>
-          <td className="num">{fmt(r.qty * +r.unit_price_usd)}</td><td>{r.seller_name}</td></tr>)}
+          <td className="num">{fmt(r.qty * +r.unit_price_usd)}</td><td>{names[r.seller_id] || r.seller_name}</td></tr>)}
           {!shown.length && <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--muted)' }}>لا توجد مبيعات</td></tr>}</tbody></table>
       <p style={{ color: 'var(--muted)', marginBottom: 0 }}>الإجمالي: <span className="num">{fmt(total)}$</span> ≈ <span className="num">{fmt(toSyp(total, rate), 0)} ل.س</span></p>
     </div>)

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
-import { useRate, fmt, toSyp, fmtDT } from '../rate.js'
+import { useRate, useNames, fmt, toSyp, fmtDT } from '../rate.js'
 import { exportPdf } from '../pdf.js'
 const blank = { item_id: '', qty: '1', usd: '', syp: '', supplier: '' }
 export default function Purchases() {
-  const rate = useRate()
+  const rate = useRate(); const names = useNames()
   const [items, setItems] = useState([]); const [rows, setRows] = useState([]); const [f, setF] = useState(blank); const [msg, setMsg] = useState(null)
   const load = async () => {
     const [a, b] = await Promise.all([supabase.from('items').select('id,name').order('name'),
@@ -46,7 +46,7 @@ export default function Purchases() {
       <button className="btn ghost" onClick={pdf} disabled={!rows.length} style={{ marginBottom: 12 }}>تصدير PDF</button>
       <table><thead><tr><th>التاريخ</th><th>القطعة</th><th>الكمية</th><th>التكلفة ($)</th><th>المورّد</th><th>سجّلها</th></tr></thead>
         <tbody>{rows.map(r => <tr key={r.id}><td className="num">{fmtDT(r.purchased_at)}</td><td>{r.item_name}</td><td className="num">{r.qty}</td>
-          <td className="num">{fmt(r.unit_cost_usd)}</td><td>{r.supplier || '—'}</td><td>{r.created_by_name}</td></tr>)}
+          <td className="num">{fmt(r.unit_cost_usd)}</td><td>{r.supplier || '—'}</td><td>{names[r.created_by] || r.created_by_name}</td></tr>)}
           {!rows.length && <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--muted)' }}>لا توجد مشتريات</td></tr>}</tbody></table>
     </div></>)
 }

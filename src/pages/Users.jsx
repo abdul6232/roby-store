@@ -16,6 +16,8 @@ export default function Users() {
     if (!res.ok) return setMsg(j.error || 'حدث خطأ')
     setMsg('تم إنشاء الحساب'); setF(empty); load()
   }
+  const rename = async (u, v) => { v = v.trim(); if (v === (u.full_name || '')) return
+    const { error } = await supabase.from('profiles').update({ full_name: v }).eq('id', u.id); setMsg(error ? error.message : 'تم تحديث الاسم'); load() }
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   return (<>
     <h2>الإدارة والحسابات</h2>
@@ -30,6 +32,6 @@ export default function Users() {
         <div style={{ height: 14 }} /><button className="btn" disabled={busy}>إنشاء الحساب</button>
       </form>
       <div className="card"><table><thead><tr><th>الاسم</th><th>الصلاحية</th></tr></thead>
-        <tbody>{list.map(u => <tr key={u.id}><td>{u.full_name || '—'}</td><td>{u.role === 'admin' ? 'مشرف' : 'موظف'}</td></tr>)}</tbody></table></div>
+        <tbody>{list.map(u => <tr key={u.id}><td><input defaultValue={u.full_name || ''} placeholder="اكتب الاسم" onBlur={e => rename(u, e.target.value)} /></td><td>{u.role === 'admin' ? 'مشرف' : 'موظف'}</td></tr>)}</tbody></table></div>
     </div></>)
 }

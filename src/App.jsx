@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from './auth.jsx'
 import Exchange from './pages/Exchange.jsx'
@@ -39,6 +39,11 @@ function Login() {
 export default function App() {
   const { session, profile, loading, isAdmin, signOut } = useAuth()
   const [tab, setTab] = useState('inventory')
+  useEffect(() => { // يضيف عناوين الأعمدة لكل خلية ليظهر الجدول كبطاقات على الجوال
+    const apply = () => document.querySelectorAll('table').forEach(t => { const h = [...t.querySelectorAll('thead th')].map(x => x.textContent)
+      t.querySelectorAll('tbody tr').forEach(r => [...r.children].forEach((td, i) => { if (!td.hasAttribute('colspan')) td.dataset.label = h[i] || '' })) })
+    apply(); const mo = new MutationObserver(apply); mo.observe(document.body, { childList: true, subtree: true }); return () => mo.disconnect()
+  }, [])
   if (loading) return <div className="center">جارٍ التحميل…</div>
   if (!session || !profile) return <Login />
   const tabs = [['inventory', 'المخزون'], ['sales', 'المبيعات'], ['purchases', 'المشتريات'], ['shortages', 'النواقص'], ['stocktake', 'الجرد'], ['exchange', 'سعر الصرف'], ...(isAdmin ? [['users', 'الإدارة والحسابات']] : [])]
@@ -47,8 +52,8 @@ export default function App() {
       <aside className="side">
         <Logo />
         {tabs.map(([k, t]) => <button key={k} className={'nav ' + (tab === k ? 'on' : '')} onClick={() => setTab(k)}>{t}</button>)}
-        <div style={{ flex: 1 }} />
-        <div style={{ color: 'var(--muted)', fontSize: '.8rem' }}>{profile.full_name || session.user.email}<br />({isAdmin ? 'مشرف' : 'موظف'})</div>
+        <div className="spacer" style={{ flex: 1 }} />
+        <div className="who" style={{ color: 'var(--muted)', fontSize: '.8rem' }}>{profile.full_name || session.user.email}<br />({isAdmin ? 'مشرف' : 'موظف'})</div>
         <button className="btn ghost" onClick={signOut}>خروج</button>
       </aside>
       <main className="main">

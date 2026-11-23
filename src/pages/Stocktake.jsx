@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
-import { useRate, fmt, toSyp } from '../rate.js'
+import { useRate, useNames, fmt, toSyp } from '../rate.js'
 import { exportPdf } from '../pdf.js'
 import SalesLog from '../components/SalesLog.jsx'
 
@@ -10,7 +10,7 @@ const cumul = (sts, reset) => sts.filter(s => !reset || s.created_at > reset.res
   .reduce((t, s) => t + s.stocktake_lines.reduce((a, l) => a + pos(l.shortage_qty) * +l.unit_price_usd, 0), 0)
 
 export default function Stocktake() {
-  const { isAdmin } = useAuth(); const rate = useRate(); const auto = useRef(false)
+  const { isAdmin } = useAuth(); const rate = useRate(); const names = useNames(); const auto = useRef(false)
   const [sts, setSts] = useState([]); const [resets, setResets] = useState([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [draft, setDraft] = useState(null); const [shelf, setShelf] = useState({}); const [msg, setMsg] = useState('')
@@ -103,7 +103,7 @@ export default function Stocktake() {
     <div className="card" style={{ marginTop: 16 }}><h3 style={{ marginTop: 0 }}>الجردات السابقة</h3>
       <table><thead><tr><th>اليوم</th><th>نقص الجرد ($)</th><th>أجراه</th><th></th></tr></thead>
         <tbody>{sts.map(s => <tr key={s.id}><td className="num">{new Date(s.stock_date).toLocaleDateString('en-GB')}</td>
-          <td className="num">{fmt(s.stocktake_lines.reduce((a, l) => a + pos(l.shortage_qty) * +l.unit_price_usd, 0))}</td><td>{s.created_by_name}</td>
+          <td className="num">{fmt(s.stocktake_lines.reduce((a, l) => a + pos(l.shortage_qty) * +l.unit_price_usd, 0))}</td><td>{names[s.created_by] || s.created_by_name}</td>
           <td><button className="nav" style={{ color: 'var(--blue)' }} onClick={() => pdf(s.stocktake_lines, s.stock_date, [['النقص التراكمي الحالي ($)', fmt(cum)]])}>PDF</button></td></tr>)}
           {!sts.length && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--muted)' }}>لا توجد جردات</td></tr>}</tbody></table></div>
   </>)
