@@ -46,6 +46,7 @@ html{-webkit-text-size-adjust:100%}
   td::before{content:attr(data-label);color:var(--muted);font-size:.8rem;flex:none}
   td[data-label=""]::before,td:not([data-label])::before{content:none}
   td[colspan]{justify-content:center}
+  td:empty{display:none}
   td input{max-width:150px}
   .card{overflow-x:visible!important}
 }

@@ -18,7 +18,7 @@ export async function onRequestPost(context) {
   if (me?.[0]?.role !== 'admin') return json({ error: 'للمشرف فقط' }, 403)
 
   // 3) إنشاء الحساب
-  const { email, password, full_name, role } = await request.json().catch(() => ({}))
+  const { email, password, full_name, role, can_edit_inventory } = await request.json().catch(() => ({}))
   if (!email || !password || !['admin', 'employee'].includes(role)) return json({ error: 'بيانات ناقصة' }, 400)
   const cr = await fetch(`${url}/auth/v1/admin/users`, { method: 'POST', headers: H,
     body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { full_name } }) })
@@ -28,7 +28,7 @@ export async function onRequestPost(context) {
   // 4) حفظ الاسم والصلاحية في profiles
   const up = await fetch(`${url}/rest/v1/profiles?on_conflict=id`, { method: 'POST',
     headers: { ...H, Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ id: created.id, full_name: (full_name || '').trim(), role }) })
+    body: JSON.stringify({ id: created.id, full_name: (full_name || '').trim(), role, can_edit_inventory: !!can_edit_inventory }) })
   if (!up.ok) return json({ error: 'أُنشئ الحساب لكن تعذّر حفظ الاسم: ' + (await up.text()) }, 500)
   return json({ ok: true })
 }

@@ -3,16 +3,17 @@ import { supabase } from '../supabase'
 import { useAuth } from '../auth.jsx'
 import { useRate, fmt, toSyp } from '../rate.js'
 import { exportPdf } from '../pdf.js'
+import InventoryHistory from '../components/InventoryHistory.jsx'
 
 const blank = { id: null, name: '', category_id: '', stock: '0', min_stock: '0', usd: '', syp: '' }
 
 export default function Inventory() {
-  const { isAdmin } = useAuth()
+  const { isAdmin, canEdit } = useAuth()
   const rate = useRate()
   const [items, setItems] = useState([]); const [cats, setCats] = useState([])
   const [q, setQ] = useState(''); const [catF, setCatF] = useState('')
   const [form, setForm] = useState(null); const [showCats, setShowCats] = useState(false)
-  const [newCat, setNewCat] = useState(''); const [msg, setMsg] = useState('')
+  const [newCat, setNewCat] = useState(''); const [msg, setMsg] = useState(''); const [view, setView] = useState('list')
 
   const load = async () => {
     const [i, c] = await Promise.all([
@@ -60,6 +61,12 @@ export default function Inventory() {
     summary: [['عدد الأصناف', shown.length], ['القيمة الإجمالية ($)', fmt(totalUsd)],
       ['القيمة الإجمالية (ل.س)', fmt(toSyp(totalUsd, rate), 0)], ['سعر الصرف', `1$ = ${fmt(rate, 0)} ل.س`]] })
 
+  if (view === 'history') return (<>
+    <h2>سجل تعديلات المخزون</h2>
+    <button className="btn ghost" style={{ marginBottom: 16 }} onClick={() => setView('list')}>← عودة للمخزون</button>
+    <InventoryHistory />
+  </>)
+
   return (<>
     <h2>المخزون</h2>
     <div className="card" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'end', marginBottom: 16 }}>
@@ -67,9 +74,10 @@ export default function Inventory() {
       <div style={{ flex: '1 1 150px' }}><label>التصنيف</label>
         <select value={catF} onChange={e => setCatF(e.target.value)}><option value="">الكل</option>
           {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-      <button className="btn" onClick={() => setForm({ ...blank })}>+ قطعة جديدة</button>
+      {canEdit && <button className="btn" onClick={() => setForm({ ...blank })}>+ قطعة جديدة</button>}
       <button className="btn ghost" onClick={() => setShowCats(!showCats)}>التصنيفات</button>
       <button className="btn ghost" onClick={doPdf} disabled={!shown.length}>تصدير PDF</button>
+      {canEdit && <button className="btn ghost" onClick={() => setView('history')}>سجل التعديلات</button>}
     </div>
     {msg && <div className="err">{msg}</div>}
 
@@ -106,8 +114,8 @@ export default function Inventory() {
           return <tr key={it.id}><td>{it.name}</td><td>{catName(it.category_id)}</td>
             <td className="num" style={{ color: low ? 'var(--danger)' : 'inherit', fontWeight: 700 }}>{it.stock}</td>
             <td className="num">{fmt(it.price_usd)}</td><td className="num">{fmt(toSyp(+it.price_usd, rate), 0)}</td>
-            <td style={{ whiteSpace: 'nowrap' }}><button className="nav" style={{ color: 'var(--blue)' }} onClick={() => edit(it)}>تعديل</button>
-              {isAdmin && <button className="nav" style={{ color: 'var(--danger)' }} onClick={() => del(it)}>حذف</button>}</td></tr>})}
+            <td style={{ whiteSpace: 'nowrap' }}>{canEdit && <button className="nav" style={{ color: 'var(--blue)' }} onClick={() => edit(it)}>تعديل</button>}
+              {canEdit && <button className="nav" style={{ color: 'var(--danger)' }} onClick={() => del(it)}>حذف</button>}</td></tr>})}
           {!shown.length && <tr><td colSpan="6" style={{ color: 'var(--muted)', textAlign: 'center' }}>لا توجد قطع</td></tr>}</tbody></table>
       <p style={{ color: 'var(--muted)', marginBottom: 0 }}>القيمة الإجمالية: <span className="num">{fmt(totalUsd)}$</span> ≈ <span className="num">{fmt(toSyp(totalUsd, rate), 0)} ل.س</span></p>
     </div>
